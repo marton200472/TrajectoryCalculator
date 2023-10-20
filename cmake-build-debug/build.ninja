@@ -56,6 +56,13 @@ build CMakeFiles/NHF.dir/main.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/
   OBJECT_DIR = CMakeFiles/NHF.dir
   OBJECT_FILE_DIR = CMakeFiles/NHF.dir
 
+build CMakeFiles/NHF.dir/Environment.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/Environment.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/Environment.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target NHF
@@ -64,7 +71,7 @@ build CMakeFiles/NHF.dir/main.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/
 #############################################
 # Link the executable NHF
 
-build NHF: C_EXECUTABLE_LINKER__NHF_Debug CMakeFiles/NHF.dir/main.c.o
+build NHF: C_EXECUTABLE_LINKER__NHF_Debug CMakeFiles/NHF.dir/main.c.o CMakeFiles/NHF.dir/Environment.c.o
   FLAGS = -g
   LINK_LIBRARIES = -lSDL2  -lSDL2_gfx  -lSDL2  -lSDL2_ttf  -lSDL2  -lSDL2_image  -lSDL2  -lSDL2_gfx  -lSDL2_ttf  -lSDL2_image
   OBJECT_DIR = CMakeFiles/NHF.dir

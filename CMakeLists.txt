@@ -3,7 +3,9 @@ project(NHF C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(NHF main.c)
+add_executable(NHF main.c
+        Environment.c
+        Environment.h)
 
 INCLUDE(FindPkgConfig)
 
