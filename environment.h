@@ -10,7 +10,9 @@ typedef struct Environment {
     double lw, sw;
 } Environment;
 
-int** GenerateRandomEnvironment(int w, int h);
+Environment GenerateRandomEnvironment(int w, int h);
+void FreeEnvironment(Environment* e);
+int GetHeightAtCoordinates(Environment* e, int x, int y);
 
 
 #endif //NHF_ENVIRONMENT_H
