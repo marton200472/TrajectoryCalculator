@@ -10,6 +10,12 @@ add_executable(NHF main.c
         noise.h
         2darr.c
         2darr.h
+        trajectory.c
+        trajectory.h
+        file.c
+        file.h
+        dynarr.c
+        dynarr.h
 )
 
 INCLUDE(FindPkgConfig)

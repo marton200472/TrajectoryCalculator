@@ -41,11 +41,12 @@ void avg(int **base, int **env, int** rm, int w, int h)
     }
 }
 
+//TODO multithreading
 int** GenerateRandomEnvironment(int w, int h) {
 
-    double** base = GeneratePerlinNoise(w,h,250);
+    double** base = GeneratePerlinNoise(w,h,500);
 
-    double max =    0;
+    double max = 0;
     for (int i = 0; i < w; ++i) {
         for (int j = 0; j < h; ++j) {
             if (base[i][j] > max)
@@ -54,26 +55,22 @@ int** GenerateRandomEnvironment(int w, int h) {
         }
     }
     printf("%f\t",max);
-    /*double weight = 1, ws = 2;
-    for (int k = 512; k >= 8; k/=2) {
-        double **curr = GeneratePerlinNoise(w,h,k);
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                base[i][j] +=curr[i][j]*weight;
-            }
+    double **curr = GeneratePerlinNoise(w,h,200);
+    for (int i = 0; i < w; ++i) {
+        for (int j = 0; j < h; ++j) {
+            base[i][j] *= 1.5;
+            base[i][j] += curr[i][j]*0.5;
         }
-        Free2DArr(curr,w);
-        ws+=weight;
-        weight/=2;
     }
+    Free2DArr(curr,w);
 
 
-*/
+
 
     int** env = (int**)Allocate2DArr(w,h,sizeof(int));
     for (int i = 0; i < w; ++i) {
         for (int j = 0; j < h; ++j) {
-            env[i][j] = pow(base[i][j],2)*1000;
+            env[i][j] = pow(base[i][j]/2,3)*2060-60;
         }
     }
 
