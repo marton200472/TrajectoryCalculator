@@ -16,6 +16,7 @@ add_executable(NHF main.c
         file.h
         dynarr.c
         dynarr.h
+        vector2.h
 )
 
 INCLUDE(FindPkgConfig)

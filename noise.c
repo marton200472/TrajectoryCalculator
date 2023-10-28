@@ -1,6 +1,7 @@
 //Perlin noise generator, based on https://en.wikipedia.org/wiki/Perlin_noise#Algorithm_detail
 #include "noise.h"
 #include "2darr.h"
+#include "vector2.h"
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,7 +9,7 @@
 
 
 
-
+//smootherstep function suggested by Ken Perlin, https://en.wikipedia.org/wiki/Smoothstep#Variations
 double Smootherstep(double x) {
     if(x<=0)
         return 0;
@@ -18,34 +19,18 @@ double Smootherstep(double x) {
     return 6*pow(x,5) - 15*pow(x,4) + 10* pow(x,3);
 }
 
-typedef struct Vector2 {
-    double x, y;
-} Vector2;
-
-Vector2 RandomVector()
-{
-    double r=(2*M_PI/RAND_MAX) * rand();
-    return (Vector2){.x=cos(r), .y=sin(r)};
-}
-
-double DotProduct(Vector2 a, Vector2 b)
-{
-    return a.x*b.x+a.y*b.y;
-}
 
 
-Vector2 OffsetVector(Vector2 from, Vector2 to)
-{
-    return ((Vector2 ){to.x - from.x, to.y - from.y});
-}
+
 
 double Interpolate(double a, double b, double w)
 {
     return (b-a) * Smootherstep(w) + a;
 }
 
-double GetPointValue(Vector2** base, int xpos, int ypos, int scale)
-{
+
+
+double GetPointValue(double **base, int xpos, int ypos, int scale) {
     Vector2 point = {.x= xpos / (double)scale, .y=ypos / (double)scale};
     int tlx = xpos / scale;
     int tly = ypos / scale;
@@ -56,8 +41,7 @@ double GetPointValue(Vector2** base, int xpos, int ypos, int scale)
     double dotProducts[4];
     for (int i = 0; i <= 1; ++i) {
         for (int j = 0; j <= 1 ; ++j) {
-            Vector2 offset = OffsetVector((Vector2){tlx+i,tly+j}, point);
-            dotProducts[2*i+j] = DotProduct(offset, base[tlx+i][tly+j]);
+            dotProducts[2*i+j] = base[tlx+i][tly+j];
         }
     }
 
@@ -73,25 +57,26 @@ double GetPointValue(Vector2** base, int xpos, int ypos, int scale)
 }
 
 
-double **GeneratePerlinNoise(int w, int h, int scale) {
+
+double **GenerateNoiseBase(int w, int h, int scale) {
     int gxdim = w / scale + 2;
     int gydim = h / scale + 2;
 
-    Vector2** grid = Allocate2DArr(gxdim, gydim, sizeof(Vector2));
+    double ** grid = Allocate2DArr(gxdim, gydim, sizeof(double));
+    double min = 1;
     for (int i = 0; i < gxdim; ++i) {
         for (int j = 0; j < gydim; ++j) {
-            grid[i][j] = RandomVector();
+            grid[i][j] = (double)rand()/(double )RAND_MAX;
+            if (grid[i][j] < min)
+                min = grid[i][j];
         }
     }
+    printf("%lf\n",min);
 
-    double** noise = Allocate2DArr(w,h,sizeof(double));
-    for (int i = 0; i < w; ++i) {
-        for (int j = 0; j < h; ++j) {
-
-            noise[i][j] = GetPointValue(grid, i,j,scale);
-        }
-    }
-    Free2DArr(grid,gxdim);
-    return noise;
+    return grid;
 }
+
+
+
+
 

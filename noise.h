@@ -2,8 +2,11 @@
 #define NHF_NOISE_H
 
 
-double** GeneratePerlinNoise(int w, int h, int scale);
+#include "vector2.h"
 
-//smootherstep function suggested by Ken Perlin, https://en.wikipedia.org/wiki/Smoothstep#Variations
+double GetPointValue(double** base, int xpos, int ypos, int scale);
+double ** GenerateNoiseBase(int w, int h, int scale);
+
+
 double Smootherstep(double x);
 #endif //NHF_NOISE_H

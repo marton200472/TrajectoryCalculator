@@ -1,13 +1,14 @@
 #ifndef NHF_ENVIRONMENT_H
 #define NHF_ENVIRONMENT_H
 
+#include "vector2.h"
+
 typedef struct Environment {
     double **lbase, **sbase;
     int w, h;
-    int lres, sref;
+    int lres, sres;
+    double lw, sw;
 } Environment;
-
-int** GetEnvironmentSection(int x, int y, int w, int h);
 
 int** GenerateRandomEnvironment(int w, int h);
 

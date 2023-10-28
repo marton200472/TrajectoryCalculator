@@ -6,75 +6,35 @@
 #include "noise.h"
 #include "2darr.h"
 
-void avg(int **base, int **env, int** rm, int w, int h)
-{
-    for (int i = 0; i < w; ++i) {
-        for (int j = 0; j < h; ++j) {
-            base[i][j] = env[i][j];
-        }
-    }
 
-    for (int i = 0; i < w; ++i) {
-        for (int j = 0; j < h; ++j) {
-            if (rm[i/100][j/100] == 0){
-                continue;
-            }
-            int sum=0,c=0;
-            int xtrsh = rand()%20+1,ytresh=rand()%20+1;
-            //int xtrsh = rm[i/100][j/100],ytresh=rm[i/100][j/100];
-            for (int k = -xtrsh; k <= xtrsh; ++k) {
-                for (int l = -ytresh; l <= ytresh; ++l) {
-                    if (i+k >= 0 && i+k < w && j+l >= 0 && j+l < h)
-                    {
-                        c++;
-                        sum+=base[i+k][j+l];
-                    }
-                }
-            }
-            env[i][j] = sum / c;
-        }
-    }
-    for (int i = 0; i < w/100; ++i) {
-        for (int j = 0; j < h/100; ++j) {
-            rm[i][j] /= 2;
-        }
-    }
-}
 
 //TODO multithreading
 int** GenerateRandomEnvironment(int w, int h) {
 
-    double** base = GeneratePerlinNoise(w,h,500);
-
-    double max = 0;
-    for (int i = 0; i < w; ++i) {
-        for (int j = 0; j < h; ++j) {
-            if (base[i][j] > max)
-                max = base[i][j];
-            //base[i][j] *= 3;
-        }
-    }
-    printf("%f\t",max);
-    double **curr = GeneratePerlinNoise(w,h,200);
-    for (int i = 0; i < w; ++i) {
-        for (int j = 0; j < h; ++j) {
-            base[i][j] *= 1.5;
-            base[i][j] += curr[i][j]*0.5;
-        }
-    }
-    Free2DArr(curr,w);
+    Environment e;
+    e.lbase = GenerateNoiseBase(w,h,500);
+    e.sbase = GenerateNoiseBase(w,h,200);
+    e.w = w;
+    e.h = h;
+    e.lres = 500;
+    e.sres = 200;
+    e.lw = 1.5;
+    e.sw = 0.5;
 
 
 
 
     int** env = (int**)Allocate2DArr(w,h,sizeof(int));
+    double min = 1;
     for (int i = 0; i < w; ++i) {
         for (int j = 0; j < h; ++j) {
-            env[i][j] = pow(base[i][j]/2,3)*2060-60;
+            double kek = pow((GetPointValue(e.lbase,i,j,500)*1.5 + GetPointValue(e.sbase,i,j,200)*0.5)/2,7);
+            env[i][j] = kek*2060-60;
+            if(kek < min)
+                min = kek;
         }
     }
-
-    Free2DArr(base, w);
+    printf("%lf\n",min);
     return env;
 
     /*int bw=w,bh=h;
@@ -117,7 +77,6 @@ int** GenerateRandomEnvironment(int w, int h) {
         }
 
     }*/
-    return env;
     /*int** fenv = malloc(w*sizeof(int*));
 
     for (int i = 0; i < w; ++i) {

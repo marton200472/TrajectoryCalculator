@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     SDL_RenderPresent(renderer);
     SDL_Delay(50);
 
-    int xdim = 800, ydim=600;
+    int xdim = 8000, ydim=6000;
     SDL_Surface* surface = SDL_CreateRGBSurface(0,xdim,ydim,32,
                                                 0x00FF0000,
                                                 0x0000FF00,
@@ -109,10 +109,11 @@ int main(int argc, char *argv[]) {
                     quit = true;
                     break;
             }
-
+            SDL_RenderCopy(renderer,texture,NULL,NULL);
+            circleRGBA(renderer,400,300,3000./xdim*400,255,0,0,255);
+            SDL_RenderPresent(renderer);
         }
-        SDL_RenderCopy(renderer,texture,NULL,NULL);
-        SDL_RenderPresent(renderer);
+
     }
 
 
