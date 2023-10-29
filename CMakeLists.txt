@@ -17,10 +17,8 @@ add_executable(NHF main.c
         dynarr.c
         dynarr.h
         vector2.h
-        mapwindow.c
-        mapwindow.h
-        trajectorywindow.c
-        trajectorywindow.h
+        colortools.c
+        colortools.h
 )
 
 INCLUDE(FindPkgConfig)

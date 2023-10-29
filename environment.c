@@ -8,7 +8,6 @@
 
 
 
-//TODO multithreading
 Environment GenerateRandomEnvironment(int w, int h)
 {
 
