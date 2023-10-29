@@ -5,6 +5,7 @@
 #include "debugmalloc.h"
 #include "2darr.h"
 #include "colortools.h"
+#include "trajectory.h"
 #include <pthread.h>
 
 typedef struct Section {
@@ -24,7 +25,7 @@ void* RenderSection(void *vargp)
     }
 }
 
-SDL_Texture* RenderEnvironmentToTexture(SDL_Renderer *renderer, Environment *env, SDL_Rect *mapRect)
+SDL_Texture* RenderEnvironmentToTexture(SDL_Renderer *renderer, Environment *env, SDL_Rect *mapRect, int* xpadding, int* ypadding)
 {
     int xpad=0, ypad=0;
     if (env->w / (double)env->h > 4./3)
@@ -62,6 +63,8 @@ SDL_Texture* RenderEnvironmentToTexture(SDL_Renderer *renderer, Environment *env
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer,surface);
     SDL_FreeSurface(surface);
+    *xpadding = xpad;
+    *ypadding = ypad;
     return  texture;
 }
 
@@ -131,6 +134,23 @@ void MoveMap(SDL_MouseMotionEvent *ev, int startX, int startY, const SDL_Rect *m
     mapRect->y = min(max(ny, 0), max_size->h-mapRect->h);
 }
 
+typedef struct DoubleInputField {
+    char buffer[20];
+    SDL_Rect bounds;
+} DoubleInputField;
+
+void RenderDoubleInputField(SDL_Renderer *renderer, DoubleInputField field)
+{
+    SDL_SetRenderDrawColor(renderer,30,30,30,255);
+    SDL_RenderFillRect(renderer,&field.bounds);
+}
+
+typedef SDL_Point Point;
+
+enum InputType {
+    Input_None, Input_ArtyPos, Input_TargetPos
+};
+
 int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -145,19 +165,31 @@ int main(int argc, char *argv[]) {
 
 
 
-    int xdim = 10000, ydim=10000;
+    int xdim = 5000, ydim=5000;
     Environment env = GenerateRandomEnvironment(xdim,ydim);
 
     SDL_Rect mapRect = {0,0};
-    SDL_Texture* terrainTexture = RenderEnvironmentToTexture(renderer,&env, &mapRect);
+    int xpad, ypad;
+    SDL_Texture* terrainTexture = RenderEnvironmentToTexture(renderer,&env, &mapRect, &xpad, &ypad);
 
     const SDL_Rect mapBoxRect = {301, 0, 800, 600};
 
     const SDL_Rect fullMap = mapRect;
 
-    bool moveMap = false;
+    Point artyPos = {xdim/2, ydim/2};
+
+    enum InputType inputType = Input_ArtyPos;
+
+    bool mapClick = false;
+    bool click = false;
+    bool mouseMoved = false;
     int mouseDownX, mouseDownY;
     SDL_Rect mouseDownMapRect;
+
+    DoubleInputField inputFields[2] = {
+            {.bounds={.x=20, .y=20, .w=100, .h=40}},
+            {.bounds={.x=20, .y=70, .w=100, .h=40}},
+    };
 
 
     bool quit = false;
@@ -175,28 +207,47 @@ int main(int argc, char *argv[]) {
                     ZoomMap(&ev.wheel,&fullMap, &mapRect);
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    if (ev.button.button == SDL_BUTTON_LEFT && ev.button.x >= 300)
+                    if (ev.button.button == SDL_BUTTON_LEFT)
                     {
                         mouseDownX = ev.button.x;
                         mouseDownY = ev.button.y;
-                        mouseDownMapRect = mapRect;
-                        moveMap=true;
+                        if (ev.button.x >= 300){
+                            mouseDownMapRect = mapRect;
+                            mapClick=true;
+                        }
+                        click = true;
+                        mouseMoved = false;
                     }
                     break;
                 case SDL_MOUSEMOTION:
-                    if (moveMap && ev.motion.x <= 300)
-                        moveMap = false;
+                    if (mapClick && ev.motion.x <= 300)
+                        mapClick = false;
 
-                    if (moveMap){
-                        MoveMap(&ev.motion,mouseDownX, mouseDownY,&fullMap,&mouseDownMapRect,&mapRect);
+                    if (click){
+                        mouseMoved = true;
+                        if (mapClick)
+                            MoveMap(&ev.motion,mouseDownX, mouseDownY,&fullMap,&mouseDownMapRect,&mapRect);
                     }
 
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    if (moveMap && ev.button.button == SDL_BUTTON_LEFT)
+                    if (ev.button.button == SDL_BUTTON_LEFT)
                     {
-                        moveMap=false;
+
+
+                        if (!mouseMoved)
+                        {
+                            if (mapClick)
+                            {
+
+                                artyPos = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                            }
+                        }
+
+                        click = false;
+                        mapClick=false;
                     }
+
                     break;
 
             }
@@ -213,6 +264,20 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawLine(renderer, 300,0, 300,600);
         SDL_RenderDrawLine(renderer, 299,0, 299,600);
+
+        for (int i = 0; i < 2; ++i) {
+            RenderDoubleInputField(renderer, inputFields[i]);
+        }
+
+        if (artyPos.x+xpad >= mapRect.x && artyPos.x+xpad <= mapRect.x+mapRect.w &&
+            artyPos.y+ypad >= mapRect.y && artyPos.y+ypad <= mapRect.y+mapRect.h  )
+        {
+            filledCircleColor(renderer,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x), 600./mapRect.h*(artyPos.y+ypad-mapRect.y),5,0xFF0000FF);
+        }
+
+        char artyPosText[50];
+        sprintf(artyPosText,"Arty pos: %d %d %d",artyPos.x, artyPos.y, GetHeightAtCoordinates(&env,artyPos.x,artyPos.y));
+        stringColor(renderer,20,30, artyPosText, 0xFFFFFFFF);
 
         SDL_RenderPresent(renderer);
 
