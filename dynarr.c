@@ -13,7 +13,7 @@ DynamicArray CreateDynamicArrayWithCapacity(int capacity)
     DynamicArray arr;
     arr.capacity = capacity;
     arr.count = 0;
-    arr.data = malloc(arr.capacity*sizeof(double ));
+    arr.data = malloc(arr.capacity*sizeof(double));
     return arr;
 }
 

@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    int xdim = 5000, ydim=5000;
+    int xdim = 10000, ydim=10000;
     Environment env = GenerateRandomEnvironment(xdim,ydim);
 
     SDL_Rect mapRect = {0,0};
@@ -274,6 +274,39 @@ int main(int argc, char *argv[]) {
         {
             filledCircleColor(renderer,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x), 600./mapRect.h*(artyPos.y+ypad-mapRect.y),5,0xFF0000FF);
         }
+
+        char tavStr[10];
+        int tav;
+        if(mapRect.w > 5000)
+        {
+            strcpy(tavStr, "10 km");
+            tav = 1000;
+        }
+        else if(mapRect.w > 2000)
+        {
+            strcpy(tavStr, "5 km");
+            tav = 500;
+        }
+        else if(mapRect.w > 1500)
+        {
+            strcpy(tavStr, "5 km");
+            tav = 500;
+        }
+        else if(mapRect.w > 500)
+        {
+            strcpy(tavStr, "1 km");
+            tav = 100;
+        }
+        else
+        {
+            strcpy(tavStr, "250 m");
+            tav = 25;
+        }
+        for (int i = 0; i < 3; ++i)
+            lineRGBA(renderer,1100-25-(tav*(800./mapRect.w)),560+i, 1100-25,560+i,229, 52, 235,255);
+
+        stringRGBA(renderer, (1100-25-(tav*(800./mapRect.w)) + 1100-25) / 2 - 10, 565,tavStr,229, 52, 235, 255);
+
 
         char artyPosText[50];
         sprintf(artyPosText,"Arty pos: %d %d %d",artyPos.x, artyPos.y, GetHeightAtCoordinates(&env,artyPos.x,artyPos.y));
