@@ -7,6 +7,7 @@
 #include "colortools.h"
 #include "trajectory.h"
 #include <pthread.h>
+#include "file.h"
 
 typedef struct Section {
     unsigned *target;
@@ -20,7 +21,8 @@ void* RenderSection(void *vargp)
     Section *data = vargp;
     for (int i = data->start; i < data->end; ++i){
         for (int j = 0; j < data->env->h; ++j) {
-            data->target[(data->env->w + 2 * data->xpad) * (j+data->ypad) + i+data->xpad]=height_to_rgb(GetHeightAtCoordinates(data->env, i, j));
+            EnvironmentPoint ep = GetHeightAtCoordinates(data->env, i, j);
+            data->target[(data->env->w + 2 * data->xpad) * (j+data->ypad) + i+data->xpad]=height_to_rgb(ep.water?-1:ep.height);
         }
     }
 }
@@ -154,6 +156,42 @@ enum InputType {
 int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
 
+    bool randomMap=false, saveMap=false;
+    int rW=5000, rH=5000;
+    int mapPathIndex = -1;
+
+    for (int i = 0; i < argc; ++i) {
+        printf("%s\n",argv[i]);
+    }
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i],"--generate") == 0)
+        {
+            randomMap = true;
+            if (argc < i+2)
+            {
+                printf("Generating default size (50km x 50km)\n");
+            }
+            else{
+                sscanf(argv[++i],"%d", &rW);
+                sscanf(argv[++i],"%d", &rH);
+            }
+
+
+        }
+        else if(strcmp(argv[i], "--file") == 0)
+        {
+            if(randomMap)
+                saveMap = true;
+            mapPathIndex = ++i;
+        }
+    }
+
+    if(mapPathIndex == -1 && !randomMap){
+        randomMap = true;
+    }
+
+
 
     SDL_Window* window = SDL_CreateWindow("Trajectory Calculator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1100, 600, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -163,10 +201,21 @@ int main(int argc, char *argv[]) {
     stringRGBA(renderer, 350, 300, "Loading...", 255, 255, 255, 255);
     SDL_RenderPresent(renderer);
 
+    Environment env;
+    if(randomMap)
+    {
+        srand(time(NULL));
+        env = GenerateRandomEnvironment(rW,rH);
+        if(saveMap)
+            WriteEnvToFile(&env,argv[mapPathIndex]);
+    }
+    else
+    {
+        env = ReadEnvFromFile(argv[mapPathIndex]);
+    }
 
-
-    int xdim = 10000, ydim=10000;
-    Environment env = GenerateRandomEnvironment(xdim,ydim);
+    int xdim=env.w;
+    int ydim=env.h;
 
     SDL_Rect mapRect = {0,0};
     int xpad, ypad;
@@ -239,8 +288,9 @@ int main(int argc, char *argv[]) {
                         {
                             if (mapClick)
                             {
-
-                                artyPos = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                                Point np = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                                if (!GetHeightAtCoordinates(&env,np.x, np.y).water)
+                                artyPos = np;
                             }
                         }
 

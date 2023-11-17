@@ -2,17 +2,23 @@
 #define NHF_ENVIRONMENT_H
 
 #include "vector2.h"
+#include "stdlib.h"
+#include "stdbool.h"
+
+typedef struct EnvironmentPoint {
+    unsigned height;
+    bool water;
+} EnvironmentPoint;
 
 typedef struct Environment {
-    double **lbase, **sbase;
+    EnvironmentPoint **base;
     int w, h;
-    int lres, sres;
-    double lw, sw;
+    int resolution;
 } Environment;
 
 Environment GenerateRandomEnvironment(int w, int h);
 void FreeEnvironment(Environment* e);
-int GetHeightAtCoordinates(Environment* e, int x, int y);
+EnvironmentPoint GetHeightAtCoordinates(Environment* e, int x, int y);
 
 
 #endif //NHF_ENVIRONMENT_H

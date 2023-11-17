@@ -6,6 +6,7 @@
 
 double GetPointValue(double** base, int xpos, int ypos, int scale);
 double ** GenerateNoiseBase(int w, int h, int scale);
+double Interpolate(double a, double b, double w);
 
 
 double Smootherstep(double x);

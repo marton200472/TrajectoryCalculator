@@ -23,11 +23,11 @@ double Smootherstep(double x) {
 
 
 
-double Interpolate(double a, double b, double w)
-{
+
+
+double Interpolate(double a, double b, double w) {
     return (b-a) * Smootherstep(w) + a;
 }
-
 
 
 double GetPointValue(double **base, int xpos, int ypos, int scale) {
