@@ -14,8 +14,8 @@ add_executable(NHF main.c
         trajectory.h
         file.c
         file.h
-        dynarr.c
-        dynarr.h
+        artydata.c
+        artydata.h
         vector2.h
         colortools.c
         colortools.h

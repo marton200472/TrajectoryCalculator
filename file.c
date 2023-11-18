@@ -5,17 +5,18 @@
 #include "2darr.h"
 
 
-DynamicArray ReadArtilleryV0Data(const char *filename) {
+ArtilleryData ReadArtilleryData(const char *filename) {
     FILE* f = fopen(filename, "r");
-    int c;
-    fscanf(f,"%d",&c);
-    DynamicArray arr = CreateDynamicArrayWithCapacity(c);
-    for (int i = 0; i < c; ++i) {
-        fscanf(f,"%lf",arr.data+i);
+    ArtilleryData ard;
+    fscanf(f,"%lf", &ard.minAngle);
+    fscanf(f,"%lf", &ard.maxAngle);
+    fscanf(f,"%d",&ard.optionCount);
+    ard.options = malloc(ard.optionCount * sizeof(double));
+    for (int i = 0; i < ard.optionCount; ++i) {
+        fscanf(f, "%lf", ard.options + i);
     }
     fclose(f);
-    arr.count = arr.capacity;
-    return arr;
+    return ard;
 }
 
 

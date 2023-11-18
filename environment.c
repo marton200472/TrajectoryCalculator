@@ -6,7 +6,7 @@
 #include "noise.h"
 #include "2darr.h"
 
-#define env_res 1
+#define env_res 10
 
 Environment GenerateRandomEnvironment(int w, int h)
 {

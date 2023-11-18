@@ -2,10 +2,10 @@
 #define NHF_FILE_H
 
 
-#include "dynarr.h"
+#include "artydata.h"
 #include "environment.h"
 
-DynamicArray ReadArtilleryV0Data(const char* filename);
+ArtilleryData ReadArtilleryData(const char* filename);
 void WriteEnvToFile(Environment *e, const char *fileName);
 Environment ReadEnvFromFile(const char *fileName);
 

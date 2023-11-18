@@ -12,7 +12,7 @@
 
 enum {
     /* size of canary in bytes. should be multiple of largest alignment
-     * required by any data type (usually 8 or 16) */
+     * required by any options type (usually 8 or 16) */
     debugmalloc_canary_size = 64,
     
     /* canary byte */
@@ -216,7 +216,7 @@ static void debugmalloc_dump_memory(char const *mem, size_t size) {
 }
 
 
-/* dump data of allocated memory block.
+/* dump options of allocated memory block.
  * if the canary is corrupted, it is also written to the log. */
 static void debugmalloc_dump_elem(DebugmallocEntry const *elem) {
     bool canary_ok = debugmalloc_canary_ok(elem);
@@ -241,7 +241,7 @@ static void debugmalloc_dump_elem(DebugmallocEntry const *elem) {
 }
 
 
-/* dump data of all memory blocks allocated. */
+/* dump options of all memory blocks allocated. */
 static void debugmalloc_dump(void) {
     DebugmallocData *instance = debugmalloc_singleton();
     debugmalloc_log("** DEBUGMALLOC DUMP ************************************\n");
@@ -258,7 +258,7 @@ static void debugmalloc_dump(void) {
 }
 
 
-/* called at program exit to dump data if there is a leak,
+/* called at program exit to dump options if there is a leak,
  * ie. allocated block remained. */
 static void debugmalloc_atexit_dump(void) {
     DebugmallocData *instance = debugmalloc_singleton();
@@ -429,7 +429,7 @@ static void *debugmalloc_realloc_full(void *oldmem, size_t newsize, char const *
         abort();
     }
 
-    /* create new allocation, copy & free old data */
+    /* create new allocation, copy & free old options */
     void *newmem = debugmalloc_malloc_full(newsize, func, expr, file, line, false);
     if (newmem == NULL) {
         debugmalloc_log("debugmalloc: %s @ %s:%u: nem sikerult uj memoriat foglalni az atmeretezeshez!\n", func, file, line);

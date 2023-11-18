@@ -153,12 +153,101 @@ enum InputType {
     Input_None, Input_ArtyPos, Input_TargetPos
 };
 
+void RenderPositionData(SDL_Renderer *renderer, enum InputType inputType, Point artyPos, Point targetPos, Environment *env)
+{
+    char stringBuf[50];
+    if(artyPos.x >= 0 && artyPos.y >= 0)
+        sprintf(stringBuf, "Arty's position: %d %d %d", artyPos.x, artyPos.y, GetHeightAtCoordinates(env, artyPos.x, artyPos.y));
+    else
+        strcpy(stringBuf, "Arty's position: (unset)");
+    if(inputType == Input_ArtyPos)
+        stringRGBA(renderer, 20, 30, stringBuf, 255, 255, 0, 255);
+    else
+        stringRGBA(renderer, 20, 30, stringBuf, 255, 255, 255, 255);
+
+    if(targetPos.x >= 0 && targetPos.y >= 0)
+        sprintf(stringBuf, "Trgt's position: %d %d %d", targetPos.x, targetPos.y, GetHeightAtCoordinates(env, targetPos.x, targetPos.y));
+    else
+        strcpy(stringBuf, "Trgt's position: (unset)");
+    if(inputType == Input_TargetPos)
+        stringRGBA(renderer, 20, 50, stringBuf, 255, 255, 0, 255);
+    else
+        stringRGBA(renderer, 20, 50, stringBuf, 255, 255, 255, 255);
+}
+
+void RenderLengthReference(SDL_Renderer *renderer, SDL_Rect mapRect)
+{
+    char tavStr[10];
+    int tav;
+    if(mapRect.w > 5000)
+    {
+        strcpy(tavStr, "10 km");
+        tav = 1000;
+    }
+    else if(mapRect.w > 2000)
+    {
+        strcpy(tavStr, "5 km");
+        tav = 500;
+    }
+    else if(mapRect.w > 1500)
+    {
+        strcpy(tavStr, "5 km");
+        tav = 500;
+    }
+    else if(mapRect.w > 500)
+    {
+        strcpy(tavStr, "1 km");
+        tav = 100;
+    }
+    else
+    {
+        strcpy(tavStr, "250 m");
+        tav = 25;
+    }
+    for (int i = 0; i < 3; ++i)
+        lineRGBA(renderer,1100-25-(tav*(800./mapRect.w)),560+i, 1100-25,560+i,229, 52, 235,255);
+
+    stringRGBA(renderer, (1100-25-(tav*(800./mapRect.w)) + 1100-25) / 2 - 10, 565,tavStr,229, 52, 235, 255);
+}
+
+void HandleArrowKeys(SDL_KeyboardEvent ev, Point *artyPos, Point *targetPos, enum InputType inputType, int w, int h)
+{
+    Point *ptc;
+    if(inputType == Input_ArtyPos)
+        ptc = artyPos;
+    else if(inputType == Input_TargetPos)
+        ptc = targetPos;
+    else
+        return;
+
+    switch (ev.keysym.scancode) {
+        case SDL_SCANCODE_LEFT:
+            if(ptc->x > 0)
+                ptc->x--;
+            break;
+        case SDL_SCANCODE_RIGHT:
+            if(ptc->x < w-1)
+                ptc->x++;
+            break;
+        case SDL_SCANCODE_UP:
+            if(ptc->y > 0)
+                ptc->y--;
+            break;
+        case SDL_SCANCODE_DOWN:
+            if(ptc->y < h-1)
+                ptc->y++;
+            break;
+        default:
+            break;
+    }
+}
+
 int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
 
     bool randomMap=false, saveMap=false;
     int rW=5000, rH=5000;
-    int mapPathIndex = -1;
+    int mapPathIndex = -1, artyDataFileIndex=-1;
 
     for (int i = 0; i < argc; ++i) {
         printf("%s\n",argv[i]);
@@ -185,20 +274,29 @@ int main(int argc, char *argv[]) {
                 saveMap = true;
             mapPathIndex = ++i;
         }
+        else if(strcmp(argv[i],"--arty")==0)
+        {
+            artyDataFileIndex = ++i;
+        }
     }
 
     if(mapPathIndex == -1 && !randomMap){
         randomMap = true;
     }
 
+    if (artyDataFileIndex == -1){
+        printf("Artillery data file required (--arty [filename])\n");
+        return -1;
+    }
 
+    ArtilleryData artyData = ReadArtilleryData(argv[artyDataFileIndex]);
 
     SDL_Window* window = SDL_CreateWindow("Trajectory Calculator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1100, 600, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    stringRGBA(renderer, 350, 300, "Loading...", 255, 255, 255, 255);
+    stringRGBA(renderer, 500, 300, "Loading...", 255, 255, 255, 255);
     SDL_RenderPresent(renderer);
 
     Environment env;
@@ -225,13 +323,14 @@ int main(int argc, char *argv[]) {
 
     const SDL_Rect fullMap = mapRect;
 
-    Point artyPos = {xdim/2, ydim/2};
+    Point artyPos = {-1, -1}, targetPos = {-1,-1};
 
     enum InputType inputType = Input_ArtyPos;
 
     bool mapClick = false;
     bool click = false;
     bool mouseMoved = false;
+    bool mapRightCLicked = false;
     int mouseDownX, mouseDownY;
     SDL_Rect mouseDownMapRect;
 
@@ -251,6 +350,26 @@ int main(int argc, char *argv[]) {
                     quit = true;
                     break;
                 case SDL_KEYDOWN:
+                    if (ev.key.type == SDL_KEYDOWN)
+                    switch (ev.key.keysym.scancode) {
+                        case SDL_SCANCODE_TAB:
+                            switch (inputType) {
+                                case Input_ArtyPos:
+                                    inputType = Input_TargetPos;
+                                    break;
+                                case Input_TargetPos:
+                                    inputType = Input_None;
+                                    break;
+                                case Input_None:
+                                    inputType = Input_ArtyPos;
+                            }
+                            break;
+                            case SDL_SCANCODE_LEFT: case SDL_SCANCODE_RIGHT: case SDL_SCANCODE_UP: case SDL_SCANCODE_DOWN:
+                                HandleArrowKeys(ev.key,&artyPos, &targetPos,inputType,env.w, env.h);
+                                break;
+                        default:
+                            break;
+                    }
                     break;
                 case SDL_MOUSEWHEEL:
                     ZoomMap(&ev.wheel,&fullMap, &mapRect);
@@ -266,6 +385,10 @@ int main(int argc, char *argv[]) {
                         }
                         click = true;
                         mouseMoved = false;
+                    }
+                    else if (ev.button.button == SDL_BUTTON_RIGHT)
+                    {
+                        mapRightCLicked = ev.button.x > 300;
                     }
                     break;
                 case SDL_MOUSEMOTION:
@@ -284,18 +407,26 @@ int main(int argc, char *argv[]) {
                     {
 
 
-                        if (!mouseMoved)
-                        {
-                            if (mapClick)
-                            {
-                                Point np = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
-                                if (!GetHeightAtCoordinates(&env,np.x, np.y).water)
-                                artyPos = np;
-                            }
-                        }
 
                         click = false;
                         mapClick=false;
+                    }
+                    else if(ev.button.button == SDL_BUTTON_RIGHT)
+                    {
+                        if (ev.button.x > 300 && mapRightCLicked)
+                        {
+                            if (inputType == Input_ArtyPos)
+                            {
+                                Point np = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                                if (!GetHeightAtCoordinates(&env,np.x, np.y).water)
+                                    artyPos = np;
+                            }
+                            else if (inputType == Input_TargetPos)
+                            {
+                                targetPos = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                            }
+                            mapRightCLicked = false;
+                        }
                     }
 
                     break;
@@ -322,45 +453,18 @@ int main(int argc, char *argv[]) {
         if (artyPos.x+xpad >= mapRect.x && artyPos.x+xpad <= mapRect.x+mapRect.w &&
             artyPos.y+ypad >= mapRect.y && artyPos.y+ypad <= mapRect.y+mapRect.h  )
         {
-            filledCircleColor(renderer,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x), 600./mapRect.h*(artyPos.y+ypad-mapRect.y),5,0xFF0000FF);
+            boxRGBA(renderer,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x)-5, 600./mapRect.h*(artyPos.y+ypad-mapRect.y)-5,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x)+5,600./mapRect.h*(artyPos.y+ypad-mapRect.y)+5,255,165,0,255);
         }
 
-        char tavStr[10];
-        int tav;
-        if(mapRect.w > 5000)
+        if (targetPos.x+xpad >= mapRect.x && targetPos.x+xpad <= mapRect.x+mapRect.w &&
+                targetPos.y+ypad >= mapRect.y && targetPos.y+ypad <= mapRect.y+mapRect.h  )
         {
-            strcpy(tavStr, "10 km");
-            tav = 1000;
+            filledCircleRGBA(renderer,301+800./mapRect.w*(targetPos.x+xpad-mapRect.x), 600./mapRect.h*(targetPos.y+ypad-mapRect.y),5,255,0,0,255);
         }
-        else if(mapRect.w > 2000)
-        {
-            strcpy(tavStr, "5 km");
-            tav = 500;
-        }
-        else if(mapRect.w > 1500)
-        {
-            strcpy(tavStr, "5 km");
-            tav = 500;
-        }
-        else if(mapRect.w > 500)
-        {
-            strcpy(tavStr, "1 km");
-            tav = 100;
-        }
-        else
-        {
-            strcpy(tavStr, "250 m");
-            tav = 25;
-        }
-        for (int i = 0; i < 3; ++i)
-            lineRGBA(renderer,1100-25-(tav*(800./mapRect.w)),560+i, 1100-25,560+i,229, 52, 235,255);
-
-        stringRGBA(renderer, (1100-25-(tav*(800./mapRect.w)) + 1100-25) / 2 - 10, 565,tavStr,229, 52, 235, 255);
 
 
-        char artyPosText[50];
-        sprintf(artyPosText,"Arty pos: %d %d %d",artyPos.x, artyPos.y, GetHeightAtCoordinates(&env,artyPos.x,artyPos.y));
-        stringColor(renderer,20,30, artyPosText, 0xFFFFFFFF);
+        RenderLengthReference(renderer,mapRect);
+        RenderPositionData(renderer,inputType,artyPos,targetPos, &env);
 
         SDL_RenderPresent(renderer);
 
