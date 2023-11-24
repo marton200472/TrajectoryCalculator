@@ -1,4 +1,4 @@
-//Perlin noise generator, based on https://en.wikipedia.org/wiki/Perlin_noise#Algorithm_detail
+
 #include "noise.h"
 #include "2darr.h"
 #include "vector2.h"
@@ -62,7 +62,7 @@ double **GenerateNoiseBase(int w, int h, int scale) {
     int gxdim = w / scale + 2;
     int gydim = h / scale + 2;
 
-    double ** grid = Allocate2DArr(gxdim, gydim, sizeof(double));
+    double ** grid = (double**)Allocate2DArr(gxdim, gydim, sizeof(double));
     double min = 1;
     for (int i = 0; i < gxdim; ++i) {
         for (int j = 0; j < gydim; ++j) {

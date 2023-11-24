@@ -5,8 +5,9 @@
 #include <math.h>
 #include "noise.h"
 #include "2darr.h"
+#include "file.h"
 
-#define env_res 10
+#define env_res 25
 
 Environment GenerateRandomEnvironment(int w, int h)
 {
@@ -14,7 +15,7 @@ Environment GenerateRandomEnvironment(int w, int h)
     Environment e = {.w = w, .h=h, .resolution=env_res};
     double **base1 = GenerateNoiseBase(w,h,500);
     double **base2 = GenerateNoiseBase(w,h,200);
-    e.base = Allocate2DArr(w/env_res+1,h/env_res+1, sizeof(EnvironmentPoint));
+    e.base = (EnvironmentPoint**)Allocate2DArr(w/env_res+1,h/env_res+1, sizeof(EnvironmentPoint));
     for (int i = 0; i <= w; i+=env_res) {
         for (int j = 0; j <= h; j+=env_res) {
             int pval = pow((GetPointValue(base1,i,j,500)*1.5 + GetPointValue(base2,i,j,200)*0.5)/2.,7)*2060-60;
@@ -25,8 +26,8 @@ Environment GenerateRandomEnvironment(int w, int h)
         }
     }
 
-    Free2DArr(base1,w/500+2);
-    Free2DArr(base2,w/200+2);
+    Free2DArr((void**)base1,w/500+2);
+    Free2DArr((void**)base2,w/200+2);
 
     return e;
 }
@@ -63,7 +64,25 @@ EnvironmentPoint GetHeightAtCoordinates(Environment* e, int x, int y)
     return (EnvironmentPoint){.height = val, .water=water};
 }
 
+
+
+Environment LoadEnvironment(bool randomMap, bool saveMap, int mapPathIndex, int rW, int rH, char *argv[]) {
+    Environment env;
+    if(randomMap)
+    {
+        srand(time(NULL));
+        env = GenerateRandomEnvironment(rW,rH);
+        if(saveMap)
+            WriteEnvToFile(&env,argv[mapPathIndex]);
+    }
+    else
+    {
+        env = ReadEnvFromFile(argv[mapPathIndex]);
+    }
+    return env;
+}
+
 void FreeEnvironment(Environment* e)
 {
-    Free2DArr(e->base, e->w/e->resolution+1);
+    Free2DArr((void**)e->base, e->w/e->resolution+1);
 }

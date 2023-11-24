@@ -8,6 +8,8 @@
 #include "trajectory.h"
 #include <pthread.h>
 #include "file.h"
+#include "minmax.h"
+#include "parameter.h"
 
 typedef struct Section {
     unsigned *target;
@@ -25,6 +27,7 @@ void* RenderSection(void *vargp)
             data->target[(data->env->w + 2 * data->xpad) * (j+data->ypad) + i+data->xpad]=height_to_rgb(ep.water?-1:ep.height);
         }
     }
+    return NULL;
 }
 
 SDL_Texture* RenderEnvironmentToTexture(SDL_Renderer *renderer, Environment *env, SDL_Rect *mapRect, int* xpadding, int* ypadding)
@@ -98,6 +101,11 @@ void ZoomMap(SDL_MouseWheelEvent *ev,const SDL_Rect *max_size, SDL_Rect* mapRect
     proposed.w *= multiplier;
     proposed.h *= multiplier;
 
+    if (proposed.x + proposed.w >  max_size->w)
+        proposed.x = max_size->w-proposed.w;
+    if (proposed.y + proposed.h >  max_size->h)
+        proposed.y = max_size->h-proposed.h;
+
 
     if (proposed.h > max_size->h || proposed.w > max_size->w)
     {
@@ -116,14 +124,7 @@ void ZoomMap(SDL_MouseWheelEvent *ev,const SDL_Rect *max_size, SDL_Rect* mapRect
     *mapRect = proposed;
 }
 
-int max(int a, int b)
-{
-    return a < b ? b : a;
-}
-int min(int a, int b)
-{
-    return a > b ? b : a;
-}
+
 
 void MoveMap(SDL_MouseMotionEvent *ev, int startX, int startY, const SDL_Rect *max_size,SDL_Rect *startMapRect, SDL_Rect *mapRect)
 {
@@ -136,18 +137,8 @@ void MoveMap(SDL_MouseMotionEvent *ev, int startX, int startY, const SDL_Rect *m
     mapRect->y = min(max(ny, 0), max_size->h-mapRect->h);
 }
 
-typedef struct DoubleInputField {
-    char buffer[20];
-    SDL_Rect bounds;
-} DoubleInputField;
 
-void RenderDoubleInputField(SDL_Renderer *renderer, DoubleInputField field)
-{
-    SDL_SetRenderDrawColor(renderer,30,30,30,255);
-    SDL_RenderFillRect(renderer,&field.bounds);
-}
 
-typedef SDL_Point Point;
 
 enum InputType {
     Input_None, Input_ArtyPos, Input_TargetPos
@@ -157,7 +148,7 @@ void RenderPositionData(SDL_Renderer *renderer, enum InputType inputType, Point 
 {
     char stringBuf[50];
     if(artyPos.x >= 0 && artyPos.y >= 0)
-        sprintf(stringBuf, "Arty's position: %d %d %d", artyPos.x, artyPos.y, GetHeightAtCoordinates(env, artyPos.x, artyPos.y));
+        sprintf(stringBuf, "Arty's position: %d %d %d", (int)artyPos.x, (int)artyPos.y, GetHeightAtCoordinates(env, (int)artyPos.x, (int)artyPos.y).height);
     else
         strcpy(stringBuf, "Arty's position: (unset)");
     if(inputType == Input_ArtyPos)
@@ -166,7 +157,7 @@ void RenderPositionData(SDL_Renderer *renderer, enum InputType inputType, Point 
         stringRGBA(renderer, 20, 30, stringBuf, 255, 255, 255, 255);
 
     if(targetPos.x >= 0 && targetPos.y >= 0)
-        sprintf(stringBuf, "Trgt's position: %d %d %d", targetPos.x, targetPos.y, GetHeightAtCoordinates(env, targetPos.x, targetPos.y));
+        sprintf(stringBuf, "Trgt's position: %d %d %d", (int)targetPos.x, (int)targetPos.y, GetHeightAtCoordinates(env, (int)targetPos.x, (int)targetPos.y).height);
     else
         strcpy(stringBuf, "Trgt's position: (unset)");
     if(inputType == Input_TargetPos)
@@ -210,7 +201,7 @@ void RenderLengthReference(SDL_Renderer *renderer, SDL_Rect mapRect)
     stringRGBA(renderer, (1100-25-(tav*(800./mapRect.w)) + 1100-25) / 2 - 10, 565,tavStr,229, 52, 235, 255);
 }
 
-void HandleArrowKeys(SDL_KeyboardEvent ev, Point *artyPos, Point *targetPos, enum InputType inputType, int w, int h)
+void HandleArrowKeys(SDL_KeyboardEvent ev, Point *artyPos, Point *targetPos, enum InputType inputType, Environment *env)
 {
     Point *ptc;
     if(inputType == Input_ArtyPos)
@@ -222,25 +213,99 @@ void HandleArrowKeys(SDL_KeyboardEvent ev, Point *artyPos, Point *targetPos, enu
 
     switch (ev.keysym.scancode) {
         case SDL_SCANCODE_LEFT:
-            if(ptc->x > 0)
+            if(ptc->x > 0 && !(inputType == Input_ArtyPos && GetHeightAtCoordinates(env,artyPos->x-1,artyPos->y).water))
                 ptc->x--;
             break;
         case SDL_SCANCODE_RIGHT:
-            if(ptc->x < w-1)
+            if(ptc->x < env->w-1 && !(inputType == Input_ArtyPos && GetHeightAtCoordinates(env,artyPos->x+1,artyPos->y).water))
                 ptc->x++;
             break;
         case SDL_SCANCODE_UP:
-            if(ptc->y > 0)
+            if(ptc->y > 0 && !(inputType == Input_ArtyPos && GetHeightAtCoordinates(env,artyPos->x,artyPos->y-1).water))
                 ptc->y--;
             break;
         case SDL_SCANCODE_DOWN:
-            if(ptc->y < h-1)
+            if(ptc->y < env->h-1 && !(inputType == Input_ArtyPos && GetHeightAtCoordinates(env,artyPos->y+1,artyPos->y).water))
                 ptc->y++;
             break;
         default:
             break;
     }
 }
+
+typedef struct ResultDisplayField {
+    AngleResult angleResult;
+    char text[64];
+    SDL_Rect bounds;
+} ResultDisplayField;
+
+typedef struct DoubleInputField {
+    char name[32];
+    double value;
+    SDL_Rect bounds;
+    char unit[4];
+} DoubleInputField;
+
+
+bool IsInsideBounds(SDL_Rect *bounds, int x, int y)
+{
+    return x >= bounds->x && x < bounds->x + bounds->w && y >= bounds->y && y < bounds->y + bounds->h;
+}
+
+void RenderDoubleInputField(SDL_Renderer *renderer, DoubleInputField *inputField)
+{
+    SDL_SetRenderDrawColor(renderer,50,50,50,255);
+    SDL_RenderDrawRect(renderer,&inputField->bounds);
+    char buf[100];
+    sprintf(buf, "%s: %.2lf%s",inputField->name,inputField->value, inputField->unit);
+    stringRGBA(renderer,inputField->bounds.x + inputField->bounds.w/2 - strlen(buf)/2*8, inputField->bounds.y+inputField->bounds.h/2-3, buf,255,255,255,255);
+    stringRGBA(renderer,inputField->bounds.x + 5, inputField->bounds.y+inputField->bounds.h/2-3, "<",255,255,255,255);
+    stringRGBA(renderer,inputField->bounds.x + inputField->bounds.w - 13, inputField->bounds.y+inputField->bounds.h/2-3, ">",255,255,255,255);
+}
+
+void RefreshCalculationResults(Point *artyPos, Point *targetPos,ArtilleryData *artyData,Environment *env, ResultDisplayField *resultFields, double *dX, int *dZ)
+{
+    if (artyPos->x >=0 && artyPos->y >= 0 && targetPos->x >= 0 && targetPos->y >= 0)
+    {
+        *dX = sqrt(pow(targetPos->x - artyPos->x, 2) + pow(targetPos->y - artyPos->y,2)) * 10;
+        *dZ = (int)GetHeightAtCoordinates(env,targetPos->x, targetPos->y).height - (int)GetHeightAtCoordinates(env, artyPos->x, artyPos->y).height-1; //-1 because gun is at 1 m height
+
+
+
+
+        for (int i = 0; i < artyData->optionCount; ++i) {
+
+            AngleResult ar = FindVerticalAngleToTarget(artyData->options[i],*dX,*dZ);
+            resultFields[i].angleResult = ar;
+            if (ar.resultCount > 0)
+            {
+                int cw = sprintf(resultFields[i].text,"%d. (%.2lf m/s): %.1lf", i+1, artyData->options[i], ar.results[0]);
+                if(ar.resultCount == 2)
+                    sprintf(resultFields[i].text + cw," %.1lf", ar.results[1]);
+            }
+
+            else
+                sprintf(resultFields[i].text,"%d. (%.2lf m/s): Out of range",i+1,artyData->options[i]);
+            resultFields[i].bounds = (SDL_Rect){20, 240+30*i, 240, 28};
+
+
+        }
+
+
+    }
+}
+
+void RenderLoadingScreen(SDL_Renderer *renderer)
+{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    stringRGBA(renderer, 500, 300, "Loading...", 255, 255, 255, 255);
+    SDL_RenderPresent(renderer);
+}
+
+
+
+
 
 int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -249,95 +314,47 @@ int main(int argc, char *argv[]) {
     int rW=5000, rH=5000;
     int mapPathIndex = -1, artyDataFileIndex=-1;
 
-    for (int i = 0; i < argc; ++i) {
-        printf("%s\n",argv[i]);
-    }
-
-    for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i],"--generate") == 0)
-        {
-            randomMap = true;
-            if (argc < i+2)
-            {
-                printf("Generating default size (50km x 50km)\n");
-            }
-            else{
-                sscanf(argv[++i],"%d", &rW);
-                sscanf(argv[++i],"%d", &rH);
-            }
-
-
-        }
-        else if(strcmp(argv[i], "--file") == 0)
-        {
-            if(randomMap)
-                saveMap = true;
-            mapPathIndex = ++i;
-        }
-        else if(strcmp(argv[i],"--arty")==0)
-        {
-            artyDataFileIndex = ++i;
-        }
-    }
-
-    if(mapPathIndex == -1 && !randomMap){
-        randomMap = true;
-    }
-
-    if (artyDataFileIndex == -1){
-        printf("Artillery data file required (--arty [filename])\n");
-        return -1;
-    }
+    ProcessCommandLineArgs(argc, argv, &randomMap, &saveMap, &rW, &rH, &mapPathIndex, &artyDataFileIndex);
 
     ArtilleryData artyData = ReadArtilleryData(argv[artyDataFileIndex]);
 
     SDL_Window* window = SDL_CreateWindow("Trajectory Calculator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1100, 600, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    stringRGBA(renderer, 500, 300, "Loading...", 255, 255, 255, 255);
-    SDL_RenderPresent(renderer);
+    RenderLoadingScreen(renderer);
 
-    Environment env;
-    if(randomMap)
-    {
-        srand(time(NULL));
-        env = GenerateRandomEnvironment(rW,rH);
-        if(saveMap)
-            WriteEnvToFile(&env,argv[mapPathIndex]);
-    }
-    else
-    {
-        env = ReadEnvFromFile(argv[mapPathIndex]);
-    }
-
-    int xdim=env.w;
-    int ydim=env.h;
+    Environment env = LoadEnvironment(randomMap, saveMap,mapPathIndex,rW,rH,argv);
 
     SDL_Rect mapRect = {0,0};
-    int xpad, ypad;
-    SDL_Texture* terrainTexture = RenderEnvironmentToTexture(renderer,&env, &mapRect, &xpad, &ypad);
+
+    int xPad, yPad;
+    SDL_Texture* terrainTexture = RenderEnvironmentToTexture(renderer, &env, &mapRect, &xPad, &yPad);
 
     const SDL_Rect mapBoxRect = {301, 0, 800, 600};
-
     const SDL_Rect fullMap = mapRect;
 
-    Point artyPos = {-1, -1}, targetPos = {-1,-1};
+    Point artyPos = {-1, -1},
+          targetPos = {-1,-1};
 
-    enum InputType inputType = Input_ArtyPos;
+
 
     bool mapClick = false;
     bool click = false;
-    bool mouseMoved = false;
     bool mapRightCLicked = false;
     int mouseDownX, mouseDownY;
     SDL_Rect mouseDownMapRect;
+    enum InputType inputType = Input_ArtyPos;
 
-    DoubleInputField inputFields[2] = {
-            {.bounds={.x=20, .y=20, .w=100, .h=40}},
-            {.bounds={.x=20, .y=70, .w=100, .h=40}},
-    };
+    ResultDisplayField *resultFields = malloc(artyData.optionCount*sizeof(ResultDisplayField));
+    int selectedResult = -1, selectedAngle = -1;
+
+    //x and z difference between gun and target
+    double deltaX;
+    int deltaZ;
+
+    DoubleInputField azimuth = {.bounds = {20,120,240,25}, .value = 0, .name = "Azimuth", .unit = "deg"};
+    DoubleInputField verticalAngle = {.bounds = {20,150,240,25}, .value = 0, .name = "Angle", .unit = "deg"};
+    DoubleInputField launchSpeed = {.bounds = {20, 180, 240, 25}, .value=artyData.options[0],.name = "Launch speed", .unit = "m/s"};
 
 
     bool quit = false;
@@ -365,7 +382,8 @@ int main(int argc, char *argv[]) {
                             }
                             break;
                             case SDL_SCANCODE_LEFT: case SDL_SCANCODE_RIGHT: case SDL_SCANCODE_UP: case SDL_SCANCODE_DOWN:
-                                HandleArrowKeys(ev.key,&artyPos, &targetPos,inputType,env.w, env.h);
+                                HandleArrowKeys(ev.key,&artyPos, &targetPos,inputType,&env);
+                                RefreshCalculationResults(&artyPos, &targetPos, &artyData, &env, resultFields, &deltaX, &deltaZ);
                                 break;
                         default:
                             break;
@@ -373,6 +391,41 @@ int main(int argc, char *argv[]) {
                     break;
                 case SDL_MOUSEWHEEL:
                     ZoomMap(&ev.wheel,&fullMap, &mapRect);
+                    int x, y;
+                    SDL_GetMouseState(&x,&y);
+                    if (IsInsideBounds(&azimuth.bounds, x,y))
+                    {
+                        azimuth.value = round((azimuth.value + ev.wheel.y*2.));
+                        while (azimuth.value >= 360.)
+                            azimuth.value -= 360.;
+                        while (azimuth.value < 0)
+                            azimuth.value+=360.;
+                    }
+                    else if (IsInsideBounds(&verticalAngle.bounds, x,y))
+                    {
+                        verticalAngle.value = round((verticalAngle.value + ev.wheel.y*2.));
+                        if (verticalAngle.value < artyData.minAngle)
+                            verticalAngle.value = artyData.minAngle;
+                        else if(verticalAngle.value > artyData.maxAngle)
+                            verticalAngle.value = artyData.maxAngle;
+                    }
+                    else if (IsInsideBounds(&launchSpeed.bounds,x,y))
+                    {
+                        int currentIndex = 0;
+                        for (int i = 0; i < artyData.optionCount; ++i) {
+                            if (artyData.options[i] == launchSpeed.value)
+                            {
+                                currentIndex = i;
+                                break;
+                            }
+                        }
+                        currentIndex+=ev.wheel.y;
+                        if (currentIndex >= artyData.optionCount)
+                            currentIndex=0;
+                        else if (currentIndex < 0)
+                            currentIndex = artyData.optionCount-1;
+                        launchSpeed.value = artyData.options[currentIndex];
+                    }
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     if (ev.button.button == SDL_BUTTON_LEFT)
@@ -384,7 +437,68 @@ int main(int argc, char *argv[]) {
                             mapClick=true;
                         }
                         click = true;
-                        mouseMoved = false;
+                        for (int i = 0; i < artyData.optionCount; ++i) {
+                            if (IsInsideBounds(&resultFields[i].bounds, ev.button.x, ev.button.y) && resultFields[i].angleResult.resultCount > 0)
+                            {
+                                if (selectedResult != i)
+                                {
+                                    selectedResult = i;
+                                    selectedAngle = 0;
+                                }
+                                else
+                                {
+                                    selectedAngle++;
+                                    if (selectedAngle == resultFields[i].angleResult.resultCount)
+                                        selectedAngle = 0;
+                                }
+                                verticalAngle.value = resultFields[i].angleResult.results[selectedAngle];
+                                launchSpeed.value = artyData.options[i];
+
+                                double az = 360. - RadToDeg(atan2(artyPos.y - targetPos.y, targetPos.x - artyPos.x) - M_PI_2);
+                                while (az >= 360.)
+                                    az -= 360.;
+                                while (az < 0.)
+                                    az += 360.;
+                                azimuth.value = az;
+                            }
+                        }
+
+                        if (IsInsideBounds(&azimuth.bounds, ev.button.x,ev.button.y))
+                        {
+                            int dir = ev.button.x < azimuth.bounds.x+azimuth.bounds.w/2 ? -1 : 1;
+                            azimuth.value = round((azimuth.value + dir*0.5)*10.)/10.;
+                            while (azimuth.value >= 360.)
+                                azimuth.value -= 360.;
+                            while (azimuth.value < 0)
+                                azimuth.value+=360.;
+                        }
+                        else if (IsInsideBounds(&verticalAngle.bounds, ev.button.x,ev.button.y))
+                        {
+                            int dir = ev.button.x < verticalAngle.bounds.x+verticalAngle.bounds.w/2 ? -1 : 1;
+                            verticalAngle.value = round((verticalAngle.value + dir*0.5)*10.)/10.;
+                            if (verticalAngle.value < artyData.minAngle)
+                                verticalAngle.value = artyData.minAngle;
+                            else if(verticalAngle.value > artyData.maxAngle)
+                                verticalAngle.value = artyData.maxAngle;
+                        }
+                        else if (IsInsideBounds(&launchSpeed.bounds,ev.button.x, ev.button.y))
+                        {
+                            int dir = ev.button.x < launchSpeed.bounds.x+launchSpeed.bounds.w/2 ? -1 : 1;
+                            int currentIndex = 0;
+                            for (int i = 0; i < artyData.optionCount; ++i) {
+                                if (artyData.options[i] == launchSpeed.value)
+                                {
+                                    currentIndex = i;
+                                    break;
+                                }
+                            }
+                            currentIndex+=dir;
+                            if (currentIndex >= artyData.optionCount)
+                                currentIndex=0;
+                            else if (currentIndex < 0)
+                                currentIndex = artyData.optionCount-1;
+                            launchSpeed.value = artyData.options[currentIndex];
+                        }
                     }
                     else if (ev.button.button == SDL_BUTTON_RIGHT)
                     {
@@ -396,7 +510,6 @@ int main(int argc, char *argv[]) {
                         mapClick = false;
 
                     if (click){
-                        mouseMoved = true;
                         if (mapClick)
                             MoveMap(&ev.motion,mouseDownX, mouseDownY,&fullMap,&mouseDownMapRect,&mapRect);
                     }
@@ -417,14 +530,17 @@ int main(int argc, char *argv[]) {
                         {
                             if (inputType == Input_ArtyPos)
                             {
-                                Point np = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                                Point np = (Point){.x = min(max(mapRect.x +mapRect.w/800.*(ev.button.x-301) - xPad, 0), env.w - 1), .y = min(max(mapRect.y + mapRect.h / 600. * ev.button.y - yPad, 0), env.h - 1)};
                                 if (!GetHeightAtCoordinates(&env,np.x, np.y).water)
                                     artyPos = np;
                             }
                             else if (inputType == Input_TargetPos)
                             {
-                                targetPos = (Point){.x = min(max(mapRect.x+mapRect.w/800.*(ev.button.x-300)-xpad,0),xdim-1), .y = min(max(mapRect.y+mapRect.h/600.*ev.button.y-ypad,0),ydim-1)};
+                                targetPos = (Point){.x = min(max(mapRect.x +mapRect.w/800.*(ev.button.x-301) - xPad, 0), env.w - 1), .y = min(max(mapRect.y + mapRect.h / 600. * ev.button.y - yPad, 0), env.h - 1)};
                             }
+
+                            RefreshCalculationResults(&artyPos, &targetPos, &artyData, &env, resultFields, &deltaX, &deltaZ);
+
                             mapRightCLicked = false;
                         }
                     }
@@ -446,33 +562,91 @@ int main(int argc, char *argv[]) {
         SDL_RenderDrawLine(renderer, 300,0, 300,600);
         SDL_RenderDrawLine(renderer, 299,0, 299,600);
 
-        for (int i = 0; i < 2; ++i) {
-            RenderDoubleInputField(renderer, inputFields[i]);
+
+
+        int pDiff = (int)(300./mapRect.w);
+        if (artyPos.x + xPad >= mapRect.x && artyPos.x + xPad <= mapRect.x + mapRect.w &&
+            artyPos.y + yPad >= mapRect.y && artyPos.y + yPad <= mapRect.y + mapRect.h  )
+        {
+            Point pos = {(int)(301 + 800. / mapRect.w * (artyPos.x + xPad - mapRect.x)), (int)(600. / mapRect.h * (artyPos.y + yPad - mapRect.y))};
+
+            boxRGBA(renderer, pos.x - 5 + pDiff, pos.y - 5 + pDiff, pos.x + 5 + pDiff, pos.y + 5 + pDiff, 250, 165, 0, 255);
+            rectangleRGBA(renderer, pos.x - 5 + pDiff, pos.y - 5 + pDiff, pos.x + 5 + pDiff+1, pos.y + 5 +pDiff+1, 0, 0, 0, 255);
         }
 
-        if (artyPos.x+xpad >= mapRect.x && artyPos.x+xpad <= mapRect.x+mapRect.w &&
-            artyPos.y+ypad >= mapRect.y && artyPos.y+ypad <= mapRect.y+mapRect.h  )
+        if (targetPos.x + xPad >= mapRect.x && targetPos.x + xPad <= mapRect.x + mapRect.w &&
+            targetPos.y + yPad >= mapRect.y && targetPos.y + yPad <= mapRect.y + mapRect.h  )
         {
-            boxRGBA(renderer,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x)-5, 600./mapRect.h*(artyPos.y+ypad-mapRect.y)-5,301+800./mapRect.w*(artyPos.x+xpad-mapRect.x)+5,600./mapRect.h*(artyPos.y+ypad-mapRect.y)+5,255,165,0,255);
-        }
-
-        if (targetPos.x+xpad >= mapRect.x && targetPos.x+xpad <= mapRect.x+mapRect.w &&
-                targetPos.y+ypad >= mapRect.y && targetPos.y+ypad <= mapRect.y+mapRect.h  )
-        {
-            filledCircleRGBA(renderer,301+800./mapRect.w*(targetPos.x+xpad-mapRect.x), 600./mapRect.h*(targetPos.y+ypad-mapRect.y),5,255,0,0,255);
+            Point pos = {(int)(301 +800./mapRect.w*(targetPos.x + xPad - mapRect.x) + pDiff), (int)(600. / mapRect.h * (targetPos.y + yPad - mapRect.y) + pDiff)};
+            filledCircleRGBA(renderer,pos.x, pos.y,5,255,0,0,255);
+            circleRGBA(renderer, pos.x, pos.y, 5, 0,0,0,255);
         }
 
 
         RenderLengthReference(renderer,mapRect);
         RenderPositionData(renderer,inputType,artyPos,targetPos, &env);
 
-        SDL_RenderPresent(renderer);
+        RenderDoubleInputField(renderer, &azimuth);
+        RenderDoubleInputField(renderer, &verticalAngle);
+        RenderDoubleInputField(renderer, &launchSpeed);
 
+
+
+        char buf[100];
+        /*sprintf(buf, "Azimuth: %.1lf", azimuth);
+        stringRGBA(renderer,20,120,buf,255,255,255,255);
+        sprintf(buf, "Angle: %.1lf", verticalAngle);
+        stringRGBA(renderer,20,140,buf,255,255,255,255);*/
+
+        if (artyPos.x >=0 && artyPos.y >= 0 && targetPos.x >= 0 && targetPos.y >= 0)
+        {
+            sprintf(buf, "dX: %.1lf m", deltaX);
+            stringRGBA(renderer,20,80,buf,255,255,255,255);
+            sprintf(buf, "dZ: %d m", deltaZ);
+            stringRGBA(renderer,20,100,buf,255,255,255,255);
+
+
+            for (int i = 0; i <artyData.optionCount; ++i) {
+                SDL_SetRenderDrawColor(renderer,50,50,50,255);
+                SDL_RenderDrawRect(renderer,&resultFields[i].bounds);
+                stringRGBA(renderer,resultFields[i].bounds.x + 5,resultFields[i].bounds.y+10,resultFields[i].text,255,255,255,255);
+            }
+        }
+
+        TrajectoryInfo trInfo = CalculateTrajectory(&env, &artyPos, azimuth.value, launchSpeed.value, verticalAngle.value);
+        sprintf(buf, "%d %d", (int)trInfo.pointOfImpact.x, (int)trInfo.pointOfImpact.y);
+        stringRGBA(renderer,20,400,buf,255,255,255,255);
+
+        for (int i = 0; i < trInfo.pointCount; ++i) {
+            if (trInfo.points[i].position.x + xPad >= mapRect.x && trInfo.points[i].position.x + xPad <= mapRect.x + mapRect.w &&
+                trInfo.points[i].position.y + yPad >= mapRect.y && trInfo.points[i].position.y + yPad <= mapRect.y + mapRect.h  ) {
+
+                Point pos = {(int) (301 + 800. / mapRect.w * (trInfo.points[i].position.x + xPad - mapRect.x) + pDiff),
+                             (int) (600. / mapRect.h * (trInfo.points[i].position.y + yPad - mapRect.y) + pDiff)};
+                filledCircleRGBA(renderer, pos.x, pos.y, 2, trInfo.points[i].color, trInfo.points[i].color,
+                                 trInfo.points[i].color, 255);
+            }
+        }
+
+        if (trInfo.pointOfImpact.x + xPad >= mapRect.x && trInfo.pointOfImpact.x + xPad <= mapRect.x + mapRect.w &&
+            trInfo.pointOfImpact.y + yPad >= mapRect.y && trInfo.pointOfImpact.y + yPad <= mapRect.y + mapRect.h  )
+        {
+            Point pos = {(int) (301 + 800. / mapRect.w * (trInfo.pointOfImpact.x + xPad - mapRect.x) + pDiff),
+                         (int) (600. / mapRect.h * (trInfo.pointOfImpact.y + yPad - mapRect.y) + pDiff)};
+            SDL_SetRenderDrawColor(renderer,255,0,0,255);
+            SDL_RenderDrawLine(renderer,pos.x-5,pos.y-5,pos.x+5,pos.y+5);
+            SDL_RenderDrawLine(renderer,pos.x-5,pos.y+5,pos.x+5,pos.y-5);
+        }
+
+        free(trInfo.points);
+
+        SDL_RenderPresent(renderer);
         SDL_Delay(20);
     }
 
     SDL_Quit();
 
     FreeEnvironment(&env);
+    free(resultFields);
     return 0;
 }

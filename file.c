@@ -45,7 +45,7 @@ Environment ReadEnvFromFile(const char *fileName) {
     fscanf(f, "%d", &env.w);
     fscanf(f, "%d", &env.h);
     fscanf(f, "%d",&env.resolution);
-    env.base = Allocate2DArr(env.w/env.resolution+1, env.h/env.resolution+1, sizeof(EnvironmentPoint));
+    env.base = (EnvironmentPoint**)Allocate2DArr(env.w/env.resolution+1, env.h/env.resolution+1, sizeof(EnvironmentPoint));
     char buf[10];
     for (int i = 0; i <= env.h; i+=env.resolution) {
         for (int j = 0; j <=env.w ; j+=env.resolution) {

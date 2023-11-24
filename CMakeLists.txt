@@ -19,6 +19,10 @@ add_executable(NHF main.c
         vector2.h
         colortools.c
         colortools.h
+        minmax.c
+        minmax.h
+        parameter.c
+        parameter.h
 )
 
 INCLUDE(FindPkgConfig)
@@ -32,3 +36,5 @@ INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIRS} ${SDL2GFX_INCLUDE_DIRS} ${SDL2TTF_INCLU
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2GFX_LIBRARIES} ${SDL2TTF_LIBRARIES} ${SDL2IMAGE_LIBRARIES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m pthread)
+
+target_compile_options(NHF PRIVATE -Wall -Werror)
