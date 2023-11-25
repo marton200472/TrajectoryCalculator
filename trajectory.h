@@ -8,6 +8,7 @@
 
 #define G 9.81
 #define PI 3.14159265359
+#define SIMULATION_TIMESTEP_S 2
 
 typedef struct AngleResult {
     int resultCount;
@@ -15,7 +16,7 @@ typedef struct AngleResult {
 } AngleResult;
 
 typedef struct Point {
-    double x, y;
+    int x, y;
 } Point;
 
 typedef struct FPoint{
@@ -42,5 +43,9 @@ AngleResult FindVerticalAngleToTarget(double v0, double x, double y);
 TrajectoryInfo CalculateTrajectory(Environment *env, Point *pos, double azimuth, double v0, double angle);
 
 double RadToDeg(double rad);
+
+double DegToRad(double deg);
+
+Point GetProjectileLocationAtTime(Point artyPos,double azimuth,double t, double v0, double angle);
 
 #endif //NHF_TRAJECTORY_H

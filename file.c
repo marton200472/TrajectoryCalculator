@@ -37,8 +37,6 @@ void WriteEnvToFile(Environment *e, const char *fileName) {
     fclose(f);
 }
 
-Environment ReadEnvFromFile(const char *fileName);
-
 Environment ReadEnvFromFile(const char *fileName) {
     FILE* f = fopen(fileName, "r");
     Environment env;

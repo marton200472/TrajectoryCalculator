@@ -1,7 +1,4 @@
 #include "environment.h"
-#include <stdlib.h>
-#include <malloc.h>
-#include <time.h>
 #include <math.h>
 #include "noise.h"
 #include "2darr.h"
@@ -18,7 +15,7 @@ Environment GenerateRandomEnvironment(int w, int h)
     e.base = (EnvironmentPoint**)Allocate2DArr(w/env_res+1,h/env_res+1, sizeof(EnvironmentPoint));
     for (int i = 0; i <= w; i+=env_res) {
         for (int j = 0; j <= h; j+=env_res) {
-            int pval = pow((GetPointValue(base1,i,j,500)*1.5 + GetPointValue(base2,i,j,200)*0.5)/2.,7)*2060-60;
+            int pval = (int)(pow((GetPointValue(base1,i,j,500)*1.5 + GetPointValue(base2,i,j,200)*0.5)/2.,7)*2060-60);
             if(pval < 0)
                 e.base[i/env_res][j/env_res] = (EnvironmentPoint){.height = 0, .water = true};
             else
@@ -61,7 +58,7 @@ EnvironmentPoint GetHeightAtCoordinates(Environment* e, int x, int y)
     bool water = Interpolate(w1, w2,xweight) > 0.6;
 
 
-    return (EnvironmentPoint){.height = val, .water=water};
+    return (EnvironmentPoint){.height = (int)val, .water=water};
 }
 
 
@@ -70,7 +67,6 @@ Environment LoadEnvironment(bool randomMap, bool saveMap, int mapPathIndex, int 
     Environment env;
     if(randomMap)
     {
-        srand(time(NULL));
         env = GenerateRandomEnvironment(rW,rH);
         if(saveMap)
             WriteEnvToFile(&env,argv[mapPathIndex]);
