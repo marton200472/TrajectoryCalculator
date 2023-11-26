@@ -1,5 +1,3 @@
-
-
 #ifndef NHF_ARTYDATA_H
 #define NHF_ARTYDATA_H
 

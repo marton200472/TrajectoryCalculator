@@ -1,9 +1,8 @@
 #ifndef NHF_ENVIRONMENT_H
 #define NHF_ENVIRONMENT_H
 
-#include "vector2.h"
-#include "stdlib.h"
-#include "stdbool.h"
+
+#include <stdbool.h>
 
 typedef struct EnvironmentPoint {
     int height;
@@ -21,6 +20,7 @@ void FreeEnvironment(Environment* e);
 EnvironmentPoint GetHeightAtCoordinates(Environment* e, int x, int y);
 
 Environment LoadEnvironment(bool randomMap, bool saveMap, int mapPathIndex, int rW, int rH, char *argv[]);
+
 
 
 #endif //NHF_ENVIRONMENT_H

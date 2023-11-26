@@ -23,6 +23,17 @@ add_executable(NHF main.c
         minmax.h
         parameter.c
         parameter.h
+        simulation.c
+        simulation.h
+        render.c
+        render.h
+        controlpanel.c
+        controlpanel.h
+        point.h
+        map.c
+        map.h
+        bounds.c
+        bounds.h
 )
 
 INCLUDE(FindPkgConfig)

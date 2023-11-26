@@ -1,5 +1,6 @@
 #include "2darr.h"
 #include "debugmalloc.h"
+#include <stdlib.h>
 
 /**
  * Lefoglal egy adott méretű 2D-s dinamikus tömböt

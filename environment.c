@@ -3,8 +3,10 @@
 #include "noise.h"
 #include "2darr.h"
 #include "file.h"
+#include "vector2.h"
 
-#define env_res 25
+
+#define ENVIRONMENT_RESOLUTION 25
 
 /**
  * Véletlenszerű domborzatot generál
@@ -15,22 +17,22 @@
  */
 Environment GenerateRandomEnvironment(int w, int h)
 {
-    Environment e = {.w = w, .h=h, .resolution=env_res};
+    Environment e = {.w = w, .h=h, .resolution=ENVIRONMENT_RESOLUTION};
     //két különböző felbontású zaj alap generálása
     double **base1 = GenerateNoiseBase(w,h,500);
     double **base2 = GenerateNoiseBase(w,h,200);
 
-    e.base = (EnvironmentPoint**)Allocate2DArr(w/env_res+1,h/env_res+1, sizeof(EnvironmentPoint));
+    e.base = (EnvironmentPoint**)Allocate2DArr(w / ENVIRONMENT_RESOLUTION + 1, h / ENVIRONMENT_RESOLUTION + 1, sizeof(EnvironmentPoint));
 
     //a zaj alapok összekeverése
-    for (int i = 0; i <= w; i+=env_res) {
-        for (int j = 0; j <= h; j+=env_res) {
+    for (int i = 0; i <= w; i+=ENVIRONMENT_RESOLUTION) {
+        for (int j = 0; j <= h; j+=ENVIRONMENT_RESOLUTION) {
             //magasság az adott pontban (így viszonylag "szép" domborzatot generál)
             int pval = (int)(pow((GetValueAtCoordinates(base1, i, j, 500) * 1.5 + GetValueAtCoordinates(base2, i, j, 200) * 0.5) / 2., 7) * 2060 - 60);
             if(pval < 0)
-                e.base[i/env_res][j/env_res] = (EnvironmentPoint){.height = 0, .water = true};
+                e.base[i / ENVIRONMENT_RESOLUTION][j / ENVIRONMENT_RESOLUTION] = (EnvironmentPoint){.height = 0, .water = true};
             else
-                e.base[i/env_res][j/env_res] = (EnvironmentPoint){.height = pval, .water = false};
+                e.base[i / ENVIRONMENT_RESOLUTION][j / ENVIRONMENT_RESOLUTION] = (EnvironmentPoint){.height = pval, .water = false};
         }
     }
 

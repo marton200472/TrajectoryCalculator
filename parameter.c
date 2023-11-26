@@ -1,3 +1,5 @@
+#include <string.h>
+#include <stdio.h>
 #include "parameter.h"
 
 
@@ -16,9 +18,6 @@
  */
 bool ProcessCommandLineArgs(int argc, char *argv[], bool *randomMap, bool *saveMap, int *rW, int *rH, int *mapPathIndex,
                             int *artyDataFileIndex) {
-    for (int i = 0; i < argc; ++i) {
-        printf("%s\n",argv[i]);
-    }
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i],"-generate") == 0)
@@ -26,11 +25,14 @@ bool ProcessCommandLineArgs(int argc, char *argv[], bool *randomMap, bool *saveM
             *randomMap = true;
             if (argc < i+2)
             {
+                i+=2;
                 printf("Generating default size (50km x 50km)\n");
             }
             else{
-                sscanf(argv[++i],"%d", rW);
-                sscanf(argv[++i],"%d", rH);
+                if(sscanf(argv[++i],"%d", rW)==0 || rW <= 0)
+                    return false;
+                if(sscanf(argv[++i],"%d", rH)==0 || rH   <= 0)
+                    return false;
             }
 
 
@@ -47,7 +49,7 @@ bool ProcessCommandLineArgs(int argc, char *argv[], bool *randomMap, bool *saveM
         }
     }
 
-    if(*mapPathIndex == -1 && !*randomMap){
+    if(*mapPathIndex == -1){
         *randomMap = true;
     }
 

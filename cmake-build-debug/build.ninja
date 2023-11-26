@@ -119,6 +119,41 @@ build CMakeFiles/NHF.dir/parameter.c.o: C_COMPILER__NHF_unscanned_Debug /home/ma
   OBJECT_DIR = CMakeFiles/NHF.dir
   OBJECT_FILE_DIR = CMakeFiles/NHF.dir
 
+build CMakeFiles/NHF.dir/simulation.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/simulation.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/simulation.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always -Wall -Werror
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
+build CMakeFiles/NHF.dir/render.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/render.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/render.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always -Wall -Werror
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
+build CMakeFiles/NHF.dir/controlpanel.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/controlpanel.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/controlpanel.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always -Wall -Werror
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
+build CMakeFiles/NHF.dir/map.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/map.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/map.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always -Wall -Werror
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
+build CMakeFiles/NHF.dir/bounds.c.o: C_COMPILER__NHF_unscanned_Debug /home/marton/CLionProjects/NHF/bounds.c || cmake_object_order_depends_target_NHF
+  DEP_FILE = CMakeFiles/NHF.dir/bounds.c.o.d
+  FLAGS = -g -std=gnu11 -fdiagnostics-color=always -Wall -Werror
+  INCLUDES = -I/usr/include/SDL2
+  OBJECT_DIR = CMakeFiles/NHF.dir
+  OBJECT_FILE_DIR = CMakeFiles/NHF.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target NHF
@@ -127,7 +162,7 @@ build CMakeFiles/NHF.dir/parameter.c.o: C_COMPILER__NHF_unscanned_Debug /home/ma
 #############################################
 # Link the executable NHF
 
-build NHF: C_EXECUTABLE_LINKER__NHF_Debug CMakeFiles/NHF.dir/main.c.o CMakeFiles/NHF.dir/environment.c.o CMakeFiles/NHF.dir/noise.c.o CMakeFiles/NHF.dir/2darr.c.o CMakeFiles/NHF.dir/trajectory.c.o CMakeFiles/NHF.dir/file.c.o CMakeFiles/NHF.dir/artydata.c.o CMakeFiles/NHF.dir/colortools.c.o CMakeFiles/NHF.dir/minmax.c.o CMakeFiles/NHF.dir/parameter.c.o
+build NHF: C_EXECUTABLE_LINKER__NHF_Debug CMakeFiles/NHF.dir/main.c.o CMakeFiles/NHF.dir/environment.c.o CMakeFiles/NHF.dir/noise.c.o CMakeFiles/NHF.dir/2darr.c.o CMakeFiles/NHF.dir/trajectory.c.o CMakeFiles/NHF.dir/file.c.o CMakeFiles/NHF.dir/artydata.c.o CMakeFiles/NHF.dir/colortools.c.o CMakeFiles/NHF.dir/minmax.c.o CMakeFiles/NHF.dir/parameter.c.o CMakeFiles/NHF.dir/simulation.c.o CMakeFiles/NHF.dir/render.c.o CMakeFiles/NHF.dir/controlpanel.c.o CMakeFiles/NHF.dir/map.c.o CMakeFiles/NHF.dir/bounds.c.o
   FLAGS = -g
   LINK_LIBRARIES = -lSDL2  -lSDL2_gfx  -lSDL2  -lSDL2_ttf  -lSDL2  -lSDL2_image  -lSDL2  -lm  -lpthread  -lSDL2_gfx  -lSDL2_ttf  -lSDL2_image  -lm  -lpthread
   OBJECT_DIR = CMakeFiles/NHF.dir

@@ -1,5 +1,8 @@
 #include "trajectory.h"
 #include "debugmalloc.h"
+#include "vector2.h"
+#include "minmax.h"
+#include <math.h>
 
 /**
  * Radiánból fokba konvertál

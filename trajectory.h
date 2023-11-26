@@ -1,11 +1,9 @@
 #ifndef NHF_TRAJECTORY_H
 #define NHF_TRAJECTORY_H
 
-#include <stdbool.h>
-#include <math.h>
 #include "environment.h"
-#include "minmax.h"
 #include "artydata.h"
+#include "point.h"
 
 #define G 9.81
 #define PI 3.14159265359
@@ -16,13 +14,7 @@ typedef struct AngleResult {
     double results[2];
 } AngleResult;
 
-typedef struct Point {
-    int x, y;
-} Point;
 
-typedef struct FPoint{
-    double x, y;
-} FPoint;
 
 typedef struct ProjectilePoint {
     FPoint position;
