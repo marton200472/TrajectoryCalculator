@@ -307,7 +307,7 @@ void RefreshCalculationResults(Point *artyPos, Point *targetPos,ArtilleryData *a
 
         for (int i = 0; i < artyData->optionCount; ++i) {
 
-            AngleResult ar = FindVerticalAngleToTarget(artyData->options[i],*dX,*dZ);
+            AngleResult ar = FindVerticalAngleToTarget(artyData->options[i],*dX,*dZ, artyData);
             resultFields[i].angleResult = ar;
             if (ar.resultCount > 0)
             {
@@ -390,7 +390,7 @@ void ProcessSimulation(SDL_Renderer *renderer, TrajectoryInfo  *trInfo, SDL_Rect
 
     if (!*ended)
     {
-        Point pos = GetProjectileLocationAtTime(artyPos,azimuth,simSpeed == SimSpeed_Quick?t*10:t,v0, angle);
+        Point pos = GetProjectileMapLocationAtTime(artyPos, azimuth, simSpeed == SimSpeed_Quick ? t * 10 : t, v0, angle);
         if (pos.x + xPad >= mapRect.x && pos.x + xPad <= mapRect.x + mapRect.w &&
             pos.y + yPad >= mapRect.y && pos.y + yPad <= mapRect.y + mapRect.h)
         {

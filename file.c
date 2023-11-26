@@ -4,7 +4,12 @@
 #include <string.h>
 #include "2darr.h"
 
-
+/**
+ * Beolvassa egy tüzérségi löveg tulajdonságait
+ * @param filename az adatokat tartalmazó fájl elérési útvonala
+ * @return az adatokat tartalmazó ArtilleryData struktúra
+ * @author Márton
+ */
 ArtilleryData ReadArtilleryData(const char *filename) {
     FILE* f = fopen(filename, "r");
     ArtilleryData ard;
@@ -20,7 +25,12 @@ ArtilleryData ReadArtilleryData(const char *filename) {
 }
 
 
-
+/**
+ * Domborzatot ment fájlba
+ * @param e pointer a domborzatra
+ * @param fileName a cél fájl elérési útvonala
+ * @author Márton
+ */
 void WriteEnvToFile(Environment *e, const char *fileName) {
     FILE* f = fopen(fileName, "w");
     fprintf(f,"%d %d\n",e->w, e->h);
@@ -37,6 +47,12 @@ void WriteEnvToFile(Environment *e, const char *fileName) {
     fclose(f);
 }
 
+/**
+ * Domborzatot olvas be fájlból
+ * @param fileName a forrás fájl elérési útvonala
+ * @return a domborzatot leíró Environment struktúra
+ * @author Márton
+ */
 Environment ReadEnvFromFile(const char *fileName) {
     FILE* f = fopen(fileName, "r");
     Environment env;

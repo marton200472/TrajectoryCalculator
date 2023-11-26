@@ -5,6 +5,7 @@
 #include <math.h>
 #include "environment.h"
 #include "minmax.h"
+#include "artydata.h"
 
 #define G 9.81
 #define PI 3.14159265359
@@ -38,7 +39,7 @@ typedef struct TrajectoryInfo {
 
 
 
-AngleResult FindVerticalAngleToTarget(double v0, double x, double y);
+AngleResult FindVerticalAngleToTarget(double v0, double x, double y, ArtilleryData *artyData);
 
 TrajectoryInfo CalculateTrajectory(Environment *env, Point *pos, double azimuth, double v0, double angle);
 
@@ -46,6 +47,6 @@ double RadToDeg(double rad);
 
 double DegToRad(double deg);
 
-Point GetProjectileLocationAtTime(Point artyPos,double azimuth,double t, double v0, double angle);
+Point GetProjectileMapLocationAtTime(Point artyPos, double azimuth, double t, double v0, double angle);
 
 #endif //NHF_TRAJECTORY_H
